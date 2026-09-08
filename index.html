@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FreeQR - Lifetime Free QR Code Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    input[type="color"]::-webkit-color-swatch {
+      border: none;
+      border-radius: 9999px;
+    }
+    /* Hide scrollbar for tabs navigation */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+          </svg>
+        </div>
+        <div>
+          <span class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
+            FreeQR
+            <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Lifetime Free</span>
+          </span>
+          <p class="text-xs text-slate-400 hidden sm:block">100% Static & Client-Side • Never Expires • No Scan Limits</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="historyModalBtn" class="px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5 border border-slate-700">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Saved Codes
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- Input and Configuration Section (Left) -->
+      <section class="lg:col-span-7 space-y-6">
+        
+        <!-- Category Tab Bar -->
+        <div class="bg-slate-800/60 p-1.5 rounded-2xl border border-slate-700/60 backdrop-blur">
+          <nav class="flex space-x-1 overflow-x-auto no-scrollbar" aria-label="QR Types" id="tabContainer">
+            <button data-type="url" class="tab-btn active-tab px-4 py-2 text-sm font-medium rounded-xl flex items-center gap-2 transition whitespace-nowrap bg-indigo-600 text-white shadow-md">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+              URL / Link
+            </button>
+            <button data-type="text" class="tab-btn px-4 py-2 text-sm font-medium rounded-xl flex items-center gap-2 transition whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-700/50">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              Plain Text
+            </button>
+            <button data-type="wifi" class="tab-btn px-4 py-2 text-sm font-medium rounded-xl flex items-center gap-2 transition whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-700/50">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"/></svg>
+              Wi-Fi
+            </button>
+            <button data-type="email" class="tab-btn px-4 py-2 text-sm font-medium rounded-xl flex items-center gap-2 transition whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-700/50">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              Email
+            </button>
+            <button data-type="whatsapp" class="tab-btn px-4 py-2 text-sm font-medium rounded-xl flex items-center gap-2 transition whitespace-nowrap text-slate-400 hover:text-slate-200 hover:bg-slate-700/50">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+              WhatsApp
+            </button>
+          </nav>
+        </div>
+
+        <div class="bg-slate-800/60 p-6 rounded-2xl border border-slate-700/60 shadow-xl backdrop-blur">
+          
+          <!-- URL Panel -->
+          <div id="panel-url" class="type-panel space-y-4">
+            <div class="flex items-center justify-between">
+              <label for="input-url" class="block text-sm font-semibold text-slate-200">Target Website URL</label>
+              <span class="text-xs text-indigo-400 font-mono">https://</span>
+            </div>
+            <div class="relative">
+              <input type="url" id="input-url" placeholder="https://example.com/your-page"
+                class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-base"
+                value="https://google.com">
+              <button id="pasteUrlBtn" title="Paste from clipboard" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded-md border border-slate-600 transition">
+                Paste
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1 text-xs text-slate-400">
+              <span class="text-slate-500">Quick ideas:</span>
+              <button type="button" class="preset-btn px-2.5 py-1 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-slate-300 transition" data-val="https://github.com">GitHub</button>
+              <button type="button" class="preset-btn px-2.5 py-1 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-slate-300 transition" data-val="https://youtube.com">YouTube</button>
+              <button type="button" class="preset-btn px-2.5 py-1 bg-slate-700/50 hover:bg-slate-700 rounded-lg text-slate-300 transition" data-val="https://linkedin.com">LinkedIn</button>
+            </div>
+          </div>
+
+          <!-- Plain Text Panel -->
+          <div id="panel-text" class="type-panel hidden space-y-4">
+            <label for="input-text" class="block text-sm font-semibold text-slate-200">Plain Text or Note</label>
+            <textarea id="input-text" rows="4" placeholder="Enter any text, instructions, discount code, or secret message..."
+              class="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition text-sm resize-none"></textarea>
+          </div>
+
+          <!-- Wi-Fi Panel -->
+          <div id="panel-wifi" class="type-panel hidden space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="sm:col-span-2">
+                <label for="wifi-ssid" class="block text-xs font-semibold text-slate-300 mb-1">Network Name (SSID)</label>
+                <input type="text" id="wifi-ssid" placeholder="MyHomeNetwork" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+              </div>
+              <div>
+                <label for="wifi-pass" class="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+                <input type="text" id="wifi-pass" placeholder="Network password" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+              </div>
+              <div>
+                <label for="wifi-type" class="block text-xs font-semibold text-slate-300 mb-1">Encryption</label>
+                <select id="wifi-type" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+                  <option value="WPA">WPA / WPA2 / WPA3</option>
+                  <option value="WEP">WEP</option>
+                  <option value="nopass">No Encryption (Open)</option>
+                </select>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400">Scanning this QR code prompts smartphones to automatically connect to this Wi-Fi network.</p>
+          </div>
+
+          <!-- Email Panel -->
+          <div id="panel-email" class="type-panel hidden space-y-4">
+            <div>
+              <label for="email-to" class="block text-xs font-semibold text-slate-300 mb-1">Recipient Email</label>
+              <input type="email" id="email-to" placeholder="hello@company.com" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+            </div>
+            <div>
+              <label for="email-subject" class="block text-xs font-semibold text-slate-300 mb-1">Default Subject</label>
+              <input type="text" id="email-subject" placeholder="Inquiry about services" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+            </div>
+            <div>
+              <label for="email-body" class="block text-xs font-semibold text-slate-300 mb-1">Pre-filled Message Body</label>
+              <textarea id="email-body" rows="2" placeholder="Hi, I'd like to get in touch..." class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm resize-none"></textarea>
+            </div>
+          </div>
+
+          <!-- WhatsApp Panel -->
+          <div id="panel-whatsapp" class="type-panel hidden space-y-4">
+            <div>
+              <label for="wa-phone" class="block text-xs font-semibold text-slate-300 mb-1">Phone Number (with country code, e.g. +1...)</label>
+              <input type="tel" id="wa-phone" placeholder="15551234567" class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+            </div>
+            <div>
+              <label for="wa-msg" class="block text-xs font-semibold text-slate-300 mb-1">Pre-filled Chat Message</label>
+              <input type="text" id="wa-msg" placeholder="Hello! I found your QR code and want to connect." class="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm">
+            </div>
+          </div>
+
+        </div>
+
+        <div class="bg-slate-800/60 p-6 rounded-2xl border border-slate-700/60 shadow-xl backdrop-blur space-y-5">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-700/60">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+              <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
+              Appearance & Colors
+            </h3>
+            <button id="resetColorsBtn" class="text-xs text-slate-400 hover:text-indigo-400 transition">Reset Defaults</button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Foreground Color -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-2">QR Code Color (Dark)</label>
+              <div class="flex items-center gap-3">
+                <div class="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-slate-700 shadow cursor-pointer">
+                  <input type="color" id="fgColorInput" value="#0f172a" class="absolute -top-2 -left-2 w-16 h-16 cursor-pointer">
+                </div>
+                <input type="text" id="fgColorText" value="#0f172a" class="w-28 uppercase text-xs font-mono px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200">
+                <div class="flex gap-1.5">
+                  <button type="button" class="swatch-btn w-6 h-6 rounded-full bg-slate-900 border border-slate-600 hover:scale-110 transition" data-type="fg" data-color="#0f172a" title="Dark Slate"></button>
+                  <button type="button" class="swatch-btn w-6 h-6 rounded-full bg-indigo-600 hover:scale-110 transition" data-type="fg" data-color="#4f46e5" title="Indigo"></button>
+                  <button type="button" class="swatch-btn w-6 h-6 rounded-full bg-emerald-600 hover:scale-110 transition" data-type="fg" data-color="#059669" title="Emerald"></button>
+                  <button type="button" class="swatch-btn w-6 h-6 rounded-full bg-rose-600 hover:scale-110 transition" data-type="fg" data-color="#e11d48" title="Rose"></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Background Color -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-2">Background Color (Light)</label>
+              <div class="flex items-center gap-3">
+                <div class="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-slate-700 shadow cursor-pointer">
+                  <input type="color" id="bgColorInput" value="#ffffff" class="absolute -top-2 -left-2 w-16 h-16 cursor-pointer">
+                </div>
+                <input type="text" id="bgColorText" value="#ffffff" class="w-28 uppercase text-xs font-mono px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-200">
+                <div class="flex gap-1.5">
+                  <button type="button" class="swatch-btn w-6 h-6 rounded-full bg-white border border-slate-400 hover:scale-110 transition" data-type="bg" data-color="#ffffff" title="Pure White"></button>
+                  <button type="button" class="swatch-btn w-6 h-6 rounded-full bg-amber-50 border border-amber-200 hover:scale-110 transition" data-type="bg" data-color="#fffbeb" title="Warm Amber"></button>
+                  <button type="button" class="swatch-btn w-6 h-6 rounded-full bg-slate-100 border border-slate-300 hover:scale-110 transition" data-type="bg" data-color="#f1f5f9" title="Soft Gray"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+            <div>
+              <label for="errorCorrection" class="block text-xs font-semibold text-slate-300 mb-1">
+                Error Correction Level
+                <span class="text-slate-500 font-normal" title="Higher level allows scanning even if the code is slightly smudged, torn, or decorated">(Reliability)</span>
+              </label>
+              <select id="errorCorrection" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <option value="H" selected>High (30% redundancy - Best for print & stickers)</option>
+                <option value="Q">Quartile (25% redundancy)</option>
+                <option value="M">Medium (15% redundancy - Standard)</option>
+                <option value="L">Low (7% redundancy - Simplest modules)</option>
+              </select>
+            </div>
+            <div>
+              <label for="exportResolution" class="block text-xs font-semibold text-slate-300 mb-1">
+                Download Resolution
+              </label>
+              <select id="exportResolution" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                <option value="512">Standard Digital (512 × 512 px)</option>
+                <option value="1024" selected>High-Res Crisp (1024 × 1024 px)</option>
+                <option value="2048">Ultra Print Quality (2048 × 2048 px)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Preview and Download Section (Right) -->
+      <section class="lg:col-span-5 space-y-6">
+        <div class="bg-slate-800/60 p-6 rounded-2xl border border-slate-700/60 shadow-xl backdrop-blur flex flex-col items-center">
+          
+          <div class="w-full flex items-center justify-between mb-4">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Live Preview</span>
+            <span class="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Ready to Scan
+            </span>
+          </div>
+
+          <!-- QR Card Container -->
+          <div id="previewCard" class="relative p-6 rounded-2xl transition-all duration-300 shadow-2xl flex flex-col items-center justify-center max-w-sm w-full" style="background-color: #ffffff;">
+            <!-- Render Target for QRCode.js -->
+            <div id="qrcodeCanvas" class="p-2 rounded-lg flex items-center justify-center overflow-hidden"></div>
+            
+            <!-- Optional subtle bottom text -->
+            <p id="previewSubtitle" class="mt-3 text-xs font-medium text-slate-500 text-center truncate max-w-[240px]">
+              https://google.com
+            </p>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="w-full mt-6 grid grid-cols-2 gap-3">
+            <button id="downloadPngBtn" class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 text-sm transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Download PNG
+            </button>
+            <button id="copyImageBtn" class="w-full py-3 px-4 bg-slate-700 hover:bg-slate-600 active:scale-95 text-white font-semibold rounded-xl flex items-center justify-center gap-2 text-sm transition border border-slate-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+              Copy Image
+            </button>
+          </div>
+
+          <div class="w-full mt-3 grid grid-cols-2 gap-3">
+            <button id="printBtn" class="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl flex items-center justify-center gap-1.5 border border-slate-700 transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+              Print Clean Sheet
+            </button>
+            <button id="copyPayloadBtn" class="w-full py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl flex items-center justify-center gap-1.5 border border-slate-700 transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+              Copy Link Data
+            </button>
+          </div>
+
+        </div>
+
+        <div class="bg-gradient-to-br from-indigo-950/40 to-slate-900 border border-indigo-500/20 rounded-2xl p-5 space-y-3">
+          <h4 class="text-sm font-semibold text-indigo-200 flex items-center gap-2">
+            <svg class="w-4 h-4 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            Why is this QR code 100% Lifetime Free?
+          </h4>
+          <ul class="text-xs text-slate-300 space-y-2">
+            <li class="flex items-start gap-2">
+              <span class="text-indigo-400 font-bold">•</span>
+              <span><strong>Pure Static Standard:</strong> The URL or data is encoded directly into the pixel matrix. No middleman redirect server is involved.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-indigo-400 font-bold">•</span>
+              <span><strong>Zero Expiration Date:</strong> Because there is no hosting server needed to interpret your link, it will scan perpetually as long as your destination website exists.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-indigo-400 font-bold">•</span>
+              <span><strong>Zero Scan Limits:</strong> Scan it once or 10,000,000 times. Print it on flyers, storefronts, cards, or packages with complete confidence.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- History Modal -->
+  <div id="historyModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-700">
+        <h3 class="font-bold text-lg text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Recently Created QR Codes
+        </h3>
+        <button id="closeHistoryBtn" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      
+      <div id="historyList" class="mt-4 max-h-72 overflow-y-auto space-y-2 pr-1">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <div class="mt-4 pt-3 border-t border-slate-700 flex justify-between items-center">
+        <button id="clearHistoryBtn" class="text-xs text-rose-400 hover:text-rose-300 font-medium">Clear History</button>
+        <span class="text-xs text-slate-500">Stored safely in your browser</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Message Component -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-indigo-600 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-indigo-400/30">
+    <svg id="toastIcon" class="w-5 h-5 text-indigo-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+    </svg>
+    <span id="toastMsg" class="text-sm font-medium">Notification message</span>
+  </div>
+
+  <!-- Hidden Printable Container -->
+  <div id="printContainer" class="hidden"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Application State
+      const state = {
+        activeTab: 'url',
+        fgColor: '#0f172a',
+        bgColor: '#ffffff',
+        correctLevel: 'H',
+        currentPayload: 'https://google.com',
+        history: []
+      };
+
+      // DOM Elements
+      const qrcodeCanvas = document.getElementById('qrcodeCanvas');
+      const previewCard = document.getElementById('previewCard');
+      const previewSubtitle = document.getElementById('previewSubtitle');
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      const typePanels = document.querySelectorAll('.type-panel');
+      const fgColorInput = document.getElementById('fgColorInput');
+      const fgColorText = document.getElementById('fgColorText');
+      const bgColorInput = document.getElementById('bgColorInput');
+      const bgColorText = document.getElementById('bgColorText');
+      const errorCorrectionSelect = document.getElementById('errorCorrection');
+      const exportResolutionSelect = document.getElementById('exportResolution');
+
+      let qrInstance = null;
+      let debounceTimer = null;
+
+      // Tab Switching Logic
+      tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const type = btn.dataset.type;
+          state.activeTab = type;
+
+          // Update Button UI
+          tabButtons.forEach(b => {
+            b.classList.remove('bg-indigo-600', 'text-white', 'shadow-md', 'active-tab');
+            b.classList.add('text-slate-400', 'hover:text-slate-200', 'hover:bg-slate-700/50');
+          });
+          btn.classList.remove('text-slate-400', 'hover:text-slate-200', 'hover:bg-slate-700/50');
+          btn.classList.add('bg-indigo-600', 'text-white', 'shadow-md', 'active-tab');
+
+          // Show corresponding panel
+          typePanels.forEach(panel => {
+            panel.classList.add('hidden');
+          });
+          const targetPanel = document.getElementById(`panel-${type}`);
+          if (targetPanel) {
+            targetPanel.classList.remove('hidden');
+          }
+
+          updatePayload();
+        });
+      });
+
+      // Preset click buttons
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const val = btn.getAttribute('data-val');
+          document.getElementById('input-url').value = val;
+          updatePayload();
+        });
+      });
+
+      // Compute final string to encode based on the active tab
+      function computePayload() {
+        switch (state.activeTab) {
+          case 'url': {
+            let url = document.getElementById('input-url').value.trim();
+            if (!url) return 'https://google.com';
+            // Auto-prepend https:// if no protocol provided
+            if (!/^https?:\/\//i.test(url) && !url.startsWith('//')) {
+              url = 'https://' + url;
+            }
+            return url;
+          }
+          case 'text': {
+            return document.getElementById('input-text').value.trim() || 'Scan this lifetime free QR code!';
+          }
+          case 'wifi': {
+            const ssid = (document.getElementById('wifi-ssid').value || 'MyWiFi').replace(/"/g, '\\"');
+            const pass = (document.getElementById('wifi-pass').value || '').replace(/"/g, '\\"');
+            const type = document.getElementById('wifi-type').value;
+            // Wi-Fi QR Standard: WIFI:T:WPA;S:MyNetwork;P:MyPassword;;
+            return `WIFI:T:${type};S:${ssid};P:${pass};;`;
+          }
+          case 'email': {
+            const to = document.getElementById('email-to').value.trim();
+            const subject = encodeURIComponent(document.getElementById('email-subject').value.trim());
+            const body = encodeURIComponent(document.getElementById('email-body').value.trim());
+            if (!to) return 'mailto:info@example.com';
+            return `mailto:${to}?subject=${subject}&body=${body}`;
+          }
+          case 'whatsapp': {
+            let phone = document.getElementById('wa-phone').value.replace(/[^0-9]/g, '');
+            const msg = encodeURIComponent(document.getElementById('wa-msg').value.trim());
+            if (!phone) phone = '15550000000';
+            return `https://wa.me/${phone}${msg ? `?text=${msg}` : ''}`;
+          }
+          default:
+            return 'https://google.com';
+        }
+      }
+
+      function renderQRCode() {
+        const payload = state.currentPayload;
+        previewSubtitle.textContent = payload;
+        previewCard.style.backgroundColor = state.bgColor;
+
+        // Clear canvas wrapper
+        qrcodeCanvas.innerHTML = '';
+
+        // Map error correction code
+        let qrlibCorrection = QRCode.CorrectLevel.H;
+        if (state.correctLevel === 'L') qrlibCorrection = QRCode.CorrectLevel.L;
+        if (state.correctLevel === 'M') qrlibCorrection = QRCode.CorrectLevel.M;
+        if (state.correctLevel === 'Q') qrlibCorrection = QRCode.CorrectLevel.Q;
+
+        try {
+          qrInstance = new QRCode(qrcodeCanvas, {
+            text: payload,
+            width: 240,
+            height: 240,
+            colorDark: state.fgColor,
+            colorLight: state.bgColor,
+            correctLevel: qrlibCorrection
+          });
+        } catch (err) {
+          console.error("QR Code generation error:", err);
+          showToast("QR Content too long for selected correction level", true);
+        }
+      }
+
+      function updatePayload(saveToHistory = true) {
+        state.currentPayload = computePayload();
+        renderQRCode();
+
+        if (saveToHistory) {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            pushHistory(state.currentPayload, state.activeTab);
+          }, 800);
+        }
+      }
+
+      // Input change listeners
+      const monitoredInputs = [
+        'input-url', 'input-text', 'wifi-ssid', 'wifi-pass',
+        'wifi-type', 'email-to', 'email-subject', 'email-body',
+        'wa-phone', 'wa-msg'
+      ];
+
+      monitoredInputs.forEach(id => {
+        const elem = document.getElementById(id);
+        if (elem) {
+          elem.addEventListener('input', () => updatePayload(true));
+        }
+      });
+
+      function syncFg(color) {
+        state.fgColor = color;
+        fgColorInput.value = color;
+        fgColorText.value = color;
+        renderQRCode();
+      }
+
+      function syncBg(color) {
+        state.bgColor = color;
+        bgColorInput.value = color;
+        bgColorText.value = color;
+        renderQRCode();
+      }
+
+      fgColorInput.addEventListener('input', (e) => syncFg(e.target.value));
+      fgColorText.addEventListener('change', (e) => {
+        if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+          syncFg(e.target.value);
+        }
+      });
+
+      bgColorInput.addEventListener('input', (e) => syncBg(e.target.value));
+      bgColorText.addEventListener('change', (e) => {
+        if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+          syncBg(e.target.value);
+        }
+      });
+
+      document.querySelectorAll('.swatch-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const type = btn.dataset.type;
+          const color = btn.dataset.color;
+          if (type === 'fg') syncFg(color);
+          if (type === 'bg') syncBg(color);
+        });
+      });
+
+      document.getElementById('resetColorsBtn').addEventListener('click', () => {
+        syncFg('#0f172a');
+        syncBg('#ffffff');
+        showToast('Colors restored to default');
+      });
+
+      errorCorrectionSelect.addEventListener('change', (e) => {
+        state.correctLevel = e.target.value;
+        renderQRCode();
+      });
+
+      document.getElementById('downloadPngBtn').addEventListener('click', () => {
+        const resolution = parseInt(exportResolutionSelect.value, 10) || 1024;
+        
+        // Generate high resolution canvas in memory
+        const tempDiv = document.createElement('div');
+        tempDiv.style.display = 'none';
+        document.body.appendChild(tempDiv);
+
+        let qrlibCorrection = QRCode.CorrectLevel.H;
+        if (state.correctLevel === 'L') qrlibCorrection = QRCode.CorrectLevel.L;
+        if (state.correctLevel === 'M') qrlibCorrection = QRCode.CorrectLevel.M;
+        if (state.correctLevel === 'Q') qrlibCorrection = QRCode.CorrectLevel.Q;
+
+        try {
+          new QRCode(tempDiv, {
+            text: state.currentPayload,
+            width: resolution,
+            height: resolution,
+            colorDark: state.fgColor,
+            colorLight: state.bgColor,
+            correctLevel: qrlibCorrection
+          });
+
+          // Wait a tick for canvas rendering
+          setTimeout(() => {
+            const canvas = tempDiv.querySelector('canvas');
+            if (canvas) {
+              const dataUrl = canvas.toDataURL('image/png');
+              const link = document.createElement('a');
+              link.download = `free-qr-code-${Date.now()}.png`;
+              link.href = dataUrl;
+              link.click();
+              showToast(`Downloaded high-res ${resolution}×${resolution} PNG!`);
+            } else {
+              showToast('Error generating high-resolution canvas', true);
+            }
+            document.body.removeChild(tempDiv);
+          }, 100);
+        } catch (err) {
+          console.error(err);
+          showToast('Failed to generate image download', true);
+          if (tempDiv.parentNode) document.body.removeChild(tempDiv);
+        }
+      });
+
+      // Copy Image to Clipboard
+      document.getElementById('copyImageBtn').addEventListener('click', async () => {
+        const canvas = qrcodeCanvas.querySelector('canvas');
+        if (!canvas) {
+          showToast('No active QR code to copy', true);
+          return;
+        }
+
+        try {
+          canvas.toBlob(blob => {
+            if (!blob) {
+              showToast('Could not convert canvas to image', true);
+              return;
+            }
+            if (navigator.clipboard && window.ClipboardItem) {
+              navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': blob })
+              ]).then(() => {
+                showToast('QR Code image copied to clipboard!');
+              }).catch(() => {
+                fallbackCopyPayload();
+              });
+            } else {
+              fallbackCopyPayload();
+            }
+          }, 'image/png');
+        } catch (e) {
+          fallbackCopyPayload();
+        }
+      });
+
+      function fallbackCopyPayload() {
+        const dummy = document.createElement('textarea');
+        dummy.value = state.currentPayload;
+        document.body.appendChild(dummy);
+        dummy.select();
+        document.execCommand('copy');
+        document.body.removeChild(dummy);
+        showToast('Payload link copied to clipboard!');
+      }
+
+      document.getElementById('copyPayloadBtn').addEventListener('click', fallbackCopyPayload);
+
+      // Print Feature
+      document.getElementById('printBtn').addEventListener('click', () => {
+        const canvas = qrcodeCanvas.querySelector('canvas');
+        if (!canvas) return;
+        
+        const dataUrl = canvas.toDataURL('image/png');
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) {
+          showToast('Pop-up blocked. Please allow pop-ups to print.', true);
+          return;
+        }
+
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Print Free QR Code</title>
+              <style>
+                body {
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                  min-height: 90vh;
+                  font-family: system-ui, -apple-system, sans-serif;
+                  text-align: center;
+                  padding: 2rem;
+                }
+                .qr-box {
+                  border: 2px dashed #ccc;
+                  padding: 30px;
+                  border-radius: 16px;
+                  display: inline-block;
+                }
+                img {
+                  width: 320px;
+                  height: 320px;
+                  display: block;
+                  margin: 0 auto;
+                }
+                p {
+                  margin-top: 15px;
+                  font-size: 14px;
+                  color: #333;
+                  word-break: break-all;
+                  max-width: 400px;
+                }
+                .badge {
+                  font-size: 11px;
+                  text-transform: uppercase;
+                  letter-spacing: 1px;
+                  color: #777;
+                  margin-top: 5px;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="qr-box">
+                <img src="${dataUrl}" alt="QR Code" />
+                <p><strong>${escapeHtml(state.currentPayload)}</strong></p>
+                <div class="badge">Direct Static QR Code • Lifetime Validity</div>
+              </div>
+              <script>
+                window.onload = function() {
+                  window.print();
+                  window.close();
+                }
+              <\/script>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      });
+
+      function loadHistory() {
+        try {
+          const stored = localStorage.getItem('free_qr_history');
+          if (stored) {
+            state.history = JSON.parse(stored);
+          }
+        } catch (e) {
+          state.history = [];
+        }
+      }
+
+      function saveHistory() {
+        try {
+          localStorage.setItem('free_qr_history', JSON.stringify(state.history.slice(0, 20)));
+        } catch (e) {}
+      }
+
+      function pushHistory(payload, type) {
+        if (!payload) return;
+        // Avoid duplicate top entry
+        if (state.history.length > 0 && state.history[0].payload === payload) {
+          return;
+        }
+        state.history.unshift({
+          payload,
+          type,
+          date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        if (state.history.length > 20) state.history.pop();
+        saveHistory();
+      }
+
+      function renderHistoryModal() {
+        const list = document.getElementById('historyList');
+        list.innerHTML = '';
+
+        if (state.history.length === 0) {
+          list.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm">No saved QR codes yet. Any code you create will appear here.</div>`;
+          return;
+        }
+
+        state.history.forEach((item, index) => {
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between p-3 bg-slate-900/80 hover:bg-slate-900 border border-slate-700/60 rounded-xl transition gap-3';
+          row.innerHTML = `
+            <div class="min-w-0 flex-1 cursor-pointer history-item-click" data-index="${index}">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-indigo-900/60 text-indigo-300 border border-indigo-700/40">${escapeHtml(item.type)}</span>
+                <span class="text-xs text-slate-400">${item.date}</span>
+              </div>
+              <p class="text-xs text-slate-200 truncate mt-1 font-mono">${escapeHtml(item.payload)}</p>
+            </div>
+            <button class="restore-btn text-xs text-indigo-400 hover:text-indigo-300 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700" data-index="${index}">
+              Load
+            </button>
+          `;
+          list.appendChild(row);
+        });
+
+        // Add restore handlers
+        list.querySelectorAll('.restore-btn, .history-item-click').forEach(el => {
+          el.addEventListener('click', (e) => {
+            const index = e.currentTarget.getAttribute('data-index');
+            restoreHistoryItem(state.history[index]);
+            document.getElementById('historyModal').classList.add('hidden');
+          });
+        });
+      }
+
+      function restoreHistoryItem(item) {
+        if (!item) return;
+        state.activeTab = item.type;
+        
+        // Trigger tab UI
+        const targetBtn = document.querySelector(`.tab-btn[data-type="${item.type}"]`);
+        if (targetBtn) targetBtn.click();
+
+        // Populate appropriate input
+        if (item.type === 'url') document.getElementById('input-url').value = item.payload;
+        if (item.type === 'text') document.getElementById('input-text').value = item.payload;
+
+        updatePayload(false);
+        showToast('Restored QR code from history');
+      }
+
+      document.getElementById('historyModalBtn').addEventListener('click', () => {
+        renderHistoryModal();
+        document.getElementById('historyModal').classList.remove('hidden');
+      });
+
+      document.getElementById('closeHistoryBtn').addEventListener('click', () => {
+        document.getElementById('historyModal').classList.add('hidden');
+      });
+
+      document.getElementById('clearHistoryBtn').addEventListener('click', () => {
+        state.history = [];
+        saveHistory();
+        renderHistoryModal();
+        showToast('History cleared');
+      });
+
+      function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        const msg = document.getElementById('toastMsg');
+        const icon = document.getElementById('toastIcon');
+
+        msg.textContent = message;
+        if (isError) {
+          toast.classList.remove('bg-indigo-600', 'border-indigo-400/30');
+          toast.classList.add('bg-rose-600', 'border-rose-400/30');
+        } else {
+          toast.classList.remove('bg-rose-600', 'border-rose-400/30');
+          toast.classList.add('bg-indigo-600', 'border-indigo-400/30');
+        }
+
+        toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+        setTimeout(() => {
+          toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+        }, 3200);
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      // Paste button handler
+      document.getElementById('pasteUrlBtn').addEventListener('click', async () => {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          try {
+            const text = await navigator.clipboard.readText();
+            if (text) {
+              document.getElementById('input-url').value = text;
+              updatePayload(true);
+              showToast('URL pasted from clipboard!');
+              return;
+            }
+          } catch (e) {}
+        }
+        showToast('Press Ctrl+V (or Cmd+V) to paste URL');
+      });
+
+      // Initialize
+      loadHistory();
+      updatePayload(false);
+    });
+  </script>
+</body>
+</html>
